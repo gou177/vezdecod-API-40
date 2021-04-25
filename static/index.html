@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title>WSChat</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      .msg {
+        padding: 5px;
+        border-bottom: 1px solid rgb(151, 151, 151);
+      }
+      .msg .text {
+        overflow: hidden;
+      }
+      body {
+        max-width: 700px;
+        margin: auto;
+        height: 100vh;
+      }
+      #chat {
+        padding-top: 15px;
+        padding: 4px;
+        position: sticky;
+        bottom: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <script>
+      function connect(topic, nick) {
+        const socket = new WebSocket(
+          `ws://localhost:8000/chat?topic=${topic}&nick=${nick}`
+        );
+
+        function addElement(text, nick, date) {
+          var newDiv = document.createElement("div");
+          newDiv.innerHTML = `<div class="msg">
+            <div class="nick">${nick} <span style="color: rgb(151, 151, 151);">${date.toLocaleString(
+            "ru-RU"
+          )}</span></div>
+              <div class="text">
+                  <span>${text}</span>
+              </div>
+          </div>`;
+
+          my_div = document.getElementById("chat");
+          document.body.insertBefore(newDiv, my_div);
+          window.scrollTo(0, document.body.scrollHeight);
+        }
+
+        let text = "";
+
+        socket.addEventListener("message", (event) => {
+          const data = JSON.parse(event.data);
+          addElement(data.text, data.nick, new Date(data.created_at * 1000));
+        });
+
+        socket.addEventListener("open", () => {
+          var newDiv = document.createElement("div");
+          newDiv.innerHTML = `<input style="width: calc(100% - 8px)" placeholder="Сообщение"/>`;
+          newDiv.id = "chat";
+          document.body.append(newDiv);
+          const input = document.querySelector("#chat input");
+
+          input.addEventListener("input", updateValue);
+          input.addEventListener("change", send);
+
+          function updateValue(e) {
+            text = e.target.value;
+          }
+          function send(e) {
+            socket.send(e.target.value);
+            e.target.value = "";
+          }
+        });
+      }
+
+      var newDiv = document.createElement("div");
+      newDiv.innerHTML = `<input id="nick" placeholder="Ник"/><input id="room" placeholder="Комната"/>`;
+      document.body.append(newDiv);
+      const input = document.querySelector("#room");
+      const ninput = document.querySelector("#nick");
+      input.addEventListener("input", (e) => {
+        e.target.value = e.target.value.replace(/[^A-z^0-8^_]/g, "");
+      });
+      input.addEventListener("change", (e) => {
+        if (e.target.value) {
+          connect(e.target.value, ninput.value);
+          newDiv.remove();
+        }
+      });
+    </script>
+  </body>
+</html>

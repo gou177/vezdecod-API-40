@@ -1,0 +1,5 @@
+fastapi
+aiokafka
+aiofiles
+uvicorn
+websockets
